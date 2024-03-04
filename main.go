@@ -7,17 +7,40 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
 )
 
-func search() {
-
+func search(ctx *gin.Context) {
+	query := ctx.Request.URL.Query()
+	name := query.Get("name")
+	//Check if MemoryStore is empty and return "No Data" if it is
+	if len(memoryStores) == 0 {
+		ctx.JSON(http.StatusOK, gin.H{"message": "No Data"})
+		return
+	}
+	fmt.Println(name)
+	result := SearchViaName(name)
+	ctx.JSON(http.StatusOK, result)
 }
 
-func pageination() {
+func pageination(ctx *gin.Context) {
+	query := ctx.Request.URL.Query()
+	page := query.Get("page")
+	// Parse the page to int and pass it to the Pagination function
+	if len(memoryStores) == 0 {
+		ctx.JSON(http.StatusOK, gin.H{"message": "No Data"})
+		return
+	}
+	pageInt := 0
+	if page != "" {
+		pageInt, _ = strconv.Atoi(page)
+	}
+	result := Pagination(pageInt)
+	ctx.JSON(http.StatusOK, result)
 
 }
 
@@ -60,9 +83,17 @@ func textUpload(ctx *gin.Context) {
 }
 
 func main() {
+	files, _ := os.ReadDir("public/uploads")
+	if len(files) > 0 {
+		for _, file := range files {
+			readParse("public/uploads/" + file.Name())
+		}
+	}
 	r := gin.Default()
 	r.StaticFS("/uploads", http.Dir("public"))
 	r.GET("/", homePage)
+	r.GET("/search", search)
+	r.GET("/pagination", pageination)
 	r.POST("/upload", textUpload)
 	r.Run()
 }
