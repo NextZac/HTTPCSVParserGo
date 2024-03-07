@@ -17,14 +17,25 @@ import (
 func search(ctx *gin.Context) {
 	query := ctx.Request.URL.Query()
 	name := query.Get("name")
-	//Check if MemoryStore is empty and return "No Data" if it is
-	if len(memoryStores) == 0 {
-		ctx.JSON(http.StatusOK, gin.H{"message": "No Data"})
+	serialnr := query.Get("sn")
+	if serialnr != "" {
+		result, err := SearchViaSN(serialnr)
+		if err != nil {
+			ctx.JSON(http.StatusOK, gin.H{"message": "No Data"})
+			return
+		}
+		ctx.JSON(http.StatusOK, result)
 		return
 	}
-	fmt.Println(name)
-	result := SearchViaName(name)
-	ctx.JSON(http.StatusOK, result)
+	if name != "" {
+		//Check if MemoryStore is empty and return "No Data" if it is
+		if len(memoryStores) == 0 {
+			ctx.JSON(http.StatusOK, gin.H{"message": "No Data"})
+			return
+		}
+		result := SearchViaName(name)
+		ctx.JSON(http.StatusOK, result)
+	}
 }
 
 func pageination(ctx *gin.Context) {
